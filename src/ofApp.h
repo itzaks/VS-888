@@ -3,15 +3,17 @@
 #define WEBCAM
 
 #include "ofMain.h"
+#include "ofxMidi.h"
 #include "ofxOMXPlayer.h"
+#include "ofxOMXRecorder.h"
 
-
-class ofApp : public ofBaseApp, public ofxOMXPlayerListener{
+class ofApp : public ofBaseApp, public ofxOMXPlayerListener, public ofxMidiListener {
 public:
 
     void setup();
     void update();
     void draw();
+		void exit();
 
     void keyPressed  (int key);
     void keyReleased(int key);
@@ -25,23 +27,38 @@ public:
 
 	  ofShader shader;
 
-    ofImage image;
-    ofImage imageMask;
-    ofVideoPlayer movie;
     ofVideoGrabber camera;
-    ofxOMXPlayer omxPlayer;
+	  map<int, ofxOMXPlayer> omxPlayers;
     ofxOMXPlayer omxPlayerNoise;
+    ofxOMXPlayerSettings settings;
 
-    int camWidth;
-    int camHeight;
+    int width;
+    int height;
 
-    bool doShader;
-    bool doTextures;
-    void loadShader();
+    int currentVideo;
+    int changeToVideo;
+    bool doLoadNewVideo;
 
-    void onVideoEnd(ofxOMXPlayerListenerEventData& e);
-    void onVideoLoop(ofxOMXPlayerListenerEventData& e);
+    void loadNewVideo();
+
+		void onVideoEnd(ofxOMXPlayerListenerEventData& e);
+		void onVideoLoop(ofxOMXPlayerListenerEventData& e);
 
     ofFbo fbo;
     ofFbo maskFbo;
+
+    void newMidiMessage(ofxMidiMessage& eventArgs);
+
+    ofxMidiIn midiIn;
+    ofxMidiMessage midiMessage;
+
+    float controllers[7];
+    string videos[4];
+
+    ofxOMXRecorder recorder;
+    GLint colorFormat;
+    unsigned char* pixels;
+
+    bool doStartRecording;
+    bool doStopRecording;
 };

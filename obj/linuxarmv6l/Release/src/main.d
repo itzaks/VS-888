@@ -314,6 +314,7 @@ obj/linuxarmv6l/Release/src/main.o: \
  /usr/include/glib-2.0/gobject/gvaluearray.h \
  /usr/include/glib-2.0/gobject/gvaluetypes.h \
  /usr/include/gstreamer-1.0/gst/gstversion.h \
+ /usr/include/gstreamer-1.0/gst/gstatomicqueue.h \
  /usr/include/gstreamer-1.0/gst/gstbin.h \
  /usr/include/gstreamer-1.0/gst/gstelement.h \
  /usr/include/gstreamer-1.0/gst/gstconfig.h \
@@ -343,6 +344,7 @@ obj/linuxarmv6l/Release/src/main.o: \
  /usr/include/gstreamer-1.0/gst/gstquery.h \
  /usr/include/gstreamer-1.0/gst/gsttoc.h \
  /usr/include/gstreamer-1.0/gst/gstcontext.h \
+ /usr/include/gstreamer-1.0/gst/gstdevice.h \
  /usr/include/gstreamer-1.0/gst/gsttask.h \
  /usr/include/gstreamer-1.0/gst/gsttaskpool.h \
  /usr/include/gstreamer-1.0/gst/gstbus.h \
@@ -354,9 +356,12 @@ obj/linuxarmv6l/Release/src/main.o: \
  /usr/include/gstreamer-1.0/gst/gstbufferpool.h \
  /usr/include/gstreamer-1.0/gst/gstchildproxy.h \
  /usr/include/gstreamer-1.0/gst/gstdebugutils.h \
+ /usr/include/gstreamer-1.0/gst/gstdeviceprovider.h \
+ /usr/include/gstreamer-1.0/gst/gstdeviceproviderfactory.h \
  /usr/include/gstreamer-1.0/gst/gstelementmetadata.h \
  /usr/include/gstreamer-1.0/gst/gsterror.h \
  /usr/include/gstreamer-1.0/gst/gstghostpad.h \
+ /usr/include/gstreamer-1.0/gst/gstdevicemonitor.h \
  /usr/include/gstreamer-1.0/gst/gstinfo.h \
  /usr/include/gstreamer-1.0/gst/gstparamspecs.h \
  /usr/include/gstreamer-1.0/gst/gstvalue.h \
@@ -375,6 +380,7 @@ obj/linuxarmv6l/Release/src/main.o: \
  /usr/include/gstreamer-1.0/gst/video/video.h \
  /usr/include/gstreamer-1.0/gst/video/video-format.h \
  /usr/include/gstreamer-1.0/gst/video/video-enumtypes.h \
+ /usr/include/gstreamer-1.0/gst/video/video-tile.h \
  /usr/include/gstreamer-1.0/gst/video/video-chroma.h \
  /usr/include/gstreamer-1.0/gst/video/video-color.h \
  /usr/include/gstreamer-1.0/gst/video/video-info.h \
@@ -402,6 +408,16 @@ obj/linuxarmv6l/Release/src/main.o: \
  /home/pi/openFrameworks/libs/openFrameworks/3d/ofCamera.h \
  /home/pi/openFrameworks/libs/openFrameworks/3d/ofEasyCam.h \
  /home/pi/openFrameworks/examples/shader/06_multiTexture/src/ofApp.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidi.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiIn.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxBaseMidi.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiConstants.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiMessage.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiTypes.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/desktop/ofxRtMidiIn.h \
+ /home/pi/openFrameworks/addons/ofxMidi/libs/rtmidi/RtMidi.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiOut.h \
+ /home/pi/openFrameworks/addons/ofxMidi/src/desktop/ofxRtMidiOut.h \
  /home/pi/openFrameworks/addons/ofxOMXPlayer/src/ofxOMXPlayer.h \
  /home/pi/openFrameworks/addons/ofxOMXPlayer/src/OMXInitializer.h \
  /opt/vc/include/IL/OMX_Core.h /opt/vc/include/IL/OMX_Index.h \
@@ -482,7 +498,9 @@ obj/linuxarmv6l/Release/src/main.o: \
  /home/pi/openFrameworks/addons/ofxOMXPlayer/src/OMXAudioPlayer.h \
  /home/pi/openFrameworks/addons/ofxOMXPlayer/src/PCMRemap.h \
  /home/pi/openFrameworks/addons/ofxOMXPlayer/src/OMXAudioDecoder.h \
- /home/pi/openFrameworks/addons/ofxOMXPlayer/src/AudioCodecOMX.h
+ /home/pi/openFrameworks/addons/ofxOMXPlayer/src/AudioCodecOMX.h \
+ /home/pi/openFrameworks/addons/ofxOMXRecorder/src/ofxOMXRecorder.h \
+ /home/pi/openFrameworks/addons/ofxOMXRecorder/src/OMX_Maps.h
 
 /home/pi/openFrameworks/libs/openFrameworks/ofMain.h:
 
@@ -1154,6 +1172,8 @@ obj/linuxarmv6l/Release/src/main.o: \
 
 /usr/include/gstreamer-1.0/gst/gstversion.h:
 
+/usr/include/gstreamer-1.0/gst/gstatomicqueue.h:
+
 /usr/include/gstreamer-1.0/gst/gstbin.h:
 
 /usr/include/gstreamer-1.0/gst/gstelement.h:
@@ -1212,6 +1232,8 @@ obj/linuxarmv6l/Release/src/main.o: \
 
 /usr/include/gstreamer-1.0/gst/gstcontext.h:
 
+/usr/include/gstreamer-1.0/gst/gstdevice.h:
+
 /usr/include/gstreamer-1.0/gst/gsttask.h:
 
 /usr/include/gstreamer-1.0/gst/gsttaskpool.h:
@@ -1234,11 +1256,17 @@ obj/linuxarmv6l/Release/src/main.o: \
 
 /usr/include/gstreamer-1.0/gst/gstdebugutils.h:
 
+/usr/include/gstreamer-1.0/gst/gstdeviceprovider.h:
+
+/usr/include/gstreamer-1.0/gst/gstdeviceproviderfactory.h:
+
 /usr/include/gstreamer-1.0/gst/gstelementmetadata.h:
 
 /usr/include/gstreamer-1.0/gst/gsterror.h:
 
 /usr/include/gstreamer-1.0/gst/gstghostpad.h:
+
+/usr/include/gstreamer-1.0/gst/gstdevicemonitor.h:
 
 /usr/include/gstreamer-1.0/gst/gstinfo.h:
 
@@ -1275,6 +1303,8 @@ obj/linuxarmv6l/Release/src/main.o: \
 /usr/include/gstreamer-1.0/gst/video/video-format.h:
 
 /usr/include/gstreamer-1.0/gst/video/video-enumtypes.h:
+
+/usr/include/gstreamer-1.0/gst/video/video-tile.h:
 
 /usr/include/gstreamer-1.0/gst/video/video-chroma.h:
 
@@ -1329,6 +1359,26 @@ obj/linuxarmv6l/Release/src/main.o: \
 /home/pi/openFrameworks/libs/openFrameworks/3d/ofEasyCam.h:
 
 /home/pi/openFrameworks/examples/shader/06_multiTexture/src/ofApp.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidi.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiIn.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxBaseMidi.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiConstants.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiMessage.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiTypes.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/desktop/ofxRtMidiIn.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/libs/rtmidi/RtMidi.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/ofxMidiOut.h:
+
+/home/pi/openFrameworks/addons/ofxMidi/src/desktop/ofxRtMidiOut.h:
 
 /home/pi/openFrameworks/addons/ofxOMXPlayer/src/ofxOMXPlayer.h:
 
@@ -1505,3 +1555,7 @@ obj/linuxarmv6l/Release/src/main.o: \
 /home/pi/openFrameworks/addons/ofxOMXPlayer/src/OMXAudioDecoder.h:
 
 /home/pi/openFrameworks/addons/ofxOMXPlayer/src/AudioCodecOMX.h:
+
+/home/pi/openFrameworks/addons/ofxOMXRecorder/src/ofxOMXRecorder.h:
+
+/home/pi/openFrameworks/addons/ofxOMXRecorder/src/OMX_Maps.h:

@@ -1,1 +1,3 @@
 ofxOMXPlayer
+ofxMidi
+ofxOMXRecorder

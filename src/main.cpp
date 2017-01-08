@@ -6,6 +6,8 @@ int main( ){
 
   ofGLESWindowSettings settings;
   settings.glesVersion = 2;
+	settings.windowMode = OF_FULLSCREEN;
+
   ofCreateWindow(settings);
 
 	// this kicks off the running of my app
