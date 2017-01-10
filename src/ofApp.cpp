@@ -19,12 +19,11 @@ void ofApp::setup(){
 	videos[2] = ofToDataPath("video/video2.mp4", true);
 	videos[3] = ofToDataPath("video/video3.mp4", true);
 
-	for (int i=0; i<4; i++) {			
+	for (int i=0; i<3; i++) {
 		ofxOMXPlayerSettings settings;
 
 		settings.useHDMIForAudio = false;
 		settings.enableAudio = false;
-
 		settings.videoPath = videos[i];
 		omxPlayers[i].setup(settings);
 	}
@@ -96,7 +95,7 @@ void ofApp::draw(){
 
   //------------------------------------------- draw to mask fbo.
   maskFbo.begin();
-  	ofClear(255, 0, 0, 255);
+  ofClear(255, 0, 0, 255);
   maskFbo.end();
 
   //------------------------------------------- draw to final fbo.
@@ -115,6 +114,8 @@ void ofApp::draw(){
 			shader.setUniform1f("mod2", controllers[2]);
 			shader.setUniform1f("mod3", controllers[3]);
 			shader.setUniform1f("mod4", controllers[4]);
+			shader.setUniform1f("mod5", controllers[5]);
+			shader.setUniform1f("mod6", controllers[6]);
 
 	    // we are drawing this fbo so it is used just as a frame.
 	    maskFbo.draw(0, 0);
@@ -212,10 +213,17 @@ void ofApp::loadNewVideo() {
 	if(changeToVideo == currentVideo) {
 		return;
 	}
+	//omxPlayers[changeToVideo].seekToTimeInSeconds(0);
+	/*
+		if(omxPlayers[currentVideo].isPlaying() || !omxPlayers[currentVideo].isPaused()) {
+				omxPlayers[currentVideo].setPaused(true);
+		}
 
-	omxPlayers[currentVideo].setPaused(true);
-	omxPlayers[changeToVideo].setPaused(false);
-
+		if(!omxPlayers[changeToVideo].isPlaying() || omxPlayers[changeToVideo].isPaused()) {
+			omxPlayers[changeToVideo].seekToTimeInSeconds(0);
+			omxPlayers[changeToVideo].setPaused(false);
+		}
+	*/
 	currentVideo = changeToVideo;
 	doLoadNewVideo = false;
 }
