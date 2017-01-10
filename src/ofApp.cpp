@@ -16,10 +16,10 @@ void ofApp::setup(){
 
 	videos[0] = ofToDataPath("video/video0.mp4", true);
 	videos[1] = ofToDataPath("video/video1.mp4", true);
-	videos[2] = ofToDataPath("video/video2.mp4", true);
-	videos[3] = ofToDataPath("video/video3.mp4", true);
+	//videos[2] = ofToDataPath("video/video2.mp4", true);
+	//videos[3] = ofToDataPath("video/video3.mp4", true);
 
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<1; i++) {
 		ofxOMXPlayerSettings settings;
 
 		settings.useHDMIForAudio = false;
@@ -46,6 +46,7 @@ void ofApp::setup(){
 	//RECORING
 	doStartRecording = false;
 	doStopRecording = false;
+	loadedRecording = false;
 
 	int numColors = 3;
 
@@ -57,7 +58,7 @@ void ofApp::setup(){
 	settingsRecorder.fps = 30;
 	settingsRecorder.colorFormat = colorFormat;
 	settingsRecorder.bitrateMegabytesPerSecond = 1.0;  //default 2.0, max untested
-	settingsRecorder.enablePrettyFileName = true; //default true
+	settingsRecorder.enablePrettyFileName = false; //default true
 	recorder.setup(settingsRecorder);
 
 	int dataSize = width * height * numColors;
@@ -74,6 +75,7 @@ void ofApp::update(){
 
 	  if (doStopRecording) {
 		  doStopRecording = false;
+			loadedRecording = false;
 		  recorder.stopRecording();
 		}
 
@@ -87,6 +89,15 @@ void ofApp::update(){
 			//with the texture based player this must be done here - especially if the videos are different resolutions
 			loadNewVideo();
 		}
+
+		if (!recorder.recordings.empty() && loadedRecording == false)
+    {
+			int i = recorder.recordings.size() - 1;
+			string recordedFile = ofToDataPath(recorder.recordings[i].path(), true);
+			omxPlayer.loadMovie(recordedFile.path());
+			delete recorder.recordings[i];
+			loadedRecording = true;
+    }
 }
 
 //--------------------------------------------------------------
@@ -196,13 +207,13 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 		}
 
 		if(midiMessage.control == 68 && midiMessage.value == 127) {
-			changeToVideo = 2;
+			//changeToVideo = 2;
 			doLoadNewVideo = true;
 			ofLog() << "PLAY_2";
 		}
 
 		if(midiMessage.control == 69 && midiMessage.value == 127) {
-			changeToVideo = 3;
+			//changeToVideo = 3;
 			doLoadNewVideo = true;
 			ofLog() << "PLAY_3";
 		}

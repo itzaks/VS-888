@@ -61,4 +61,5 @@ public:
 
     bool doStartRecording;
     bool doStopRecording;
+    bool loadedRecording;
 };
