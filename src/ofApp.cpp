@@ -11,15 +11,19 @@ void ofApp::setup(){
 
 	doLoadNewVideo = false;
 	currentVideo = 0;
+	currentRecording = 0;
 
 	// SETUP VIDEOS
-
 	videos[0] = ofToDataPath("video/video0.mp4", true);
 	videos[1] = ofToDataPath("video/video1.mp4", true);
-	//videos[2] = ofToDataPath("video/video2.mp4", true);
-	//videos[3] = ofToDataPath("video/video3.mp4", true);
+	videos[2] = ofToDataPath("video/video2.mp4", true);
+	videos[3] = ofToDataPath("video/video3.mp4", true);
+	videos[4] = ofToDataPath("video/video4.mp4", true);
+	videos[5] = ofToDataPath("video/video5.mp4", true);
+	videos[6] = ofToDataPath("video/video6.mp4", true);
+	videos[7] = ofToDataPath("video/video7.mp4", true);
 
-	for (int i=0; i<1; i++) {
+	for (int i=0; i<2; i++) {
 		ofxOMXPlayerSettings settings;
 
 		settings.useHDMIForAudio = false;
@@ -27,12 +31,6 @@ void ofApp::setup(){
 		settings.videoPath = videos[i];
 		omxPlayers[i].setup(settings);
 	}
-
-	ofxOMXPlayerSettings settings;
-	settings.useHDMIForAudio = false;
-	settings.enableAudio = false;
-	settings.videoPath = ofToDataPath("noise.mov", true);
-	omxPlayerNoise.setup(settings);
 
   fbo.allocate(width, height);
   maskFbo.allocate(width, height);
@@ -46,16 +44,14 @@ void ofApp::setup(){
 	//RECORING
 	doStartRecording = false;
 	doStopRecording = false;
-	loadedRecording = false;
 
 	int numColors = 3;
-
 	colorFormat = GL_RGB;
 
 	ofxOMXRecorderSettings settingsRecorder;
 	settingsRecorder.width = width;
 	settingsRecorder.height = height;
-	settingsRecorder.fps = 30;
+	settingsRecorder.fps = 60;
 	settingsRecorder.colorFormat = colorFormat;
 	settingsRecorder.bitrateMegabytesPerSecond = 1.0;  //default 2.0, max untested
 	settingsRecorder.enablePrettyFileName = false; //default true
@@ -75,7 +71,6 @@ void ofApp::update(){
 
 	  if (doStopRecording) {
 		  doStopRecording = false;
-			loadedRecording = false;
 		  recorder.stopRecording();
 		}
 
@@ -85,18 +80,14 @@ void ofApp::update(){
 
 		if (doLoadNewVideo) {
 			ofLogVerbose(__func__) << "doing reload";
-
-			//with the texture based player this must be done here - especially if the videos are different resolutions
 			loadNewVideo();
 		}
 
-		if (!recorder.recordings.empty() && loadedRecording == false)
-    {
-			int i = recorder.recordings.size() - 1;
-			string recordedFile = ofToDataPath(recorder.recordings[i].path(), true);
-			omxPlayer.loadMovie(recordedFile.path());
-			delete recorder.recordings[i];
-			loadedRecording = true;
+		int latestRecordingIndex = recorder.recordings.size() - 1;
+		if (latestRecordingIndex != -1 && currentRecording != latestRecordingIndex) {
+			string recordedFile = recorder.recordings[latestRecordingIndex].path();
+			omxPlayers[0].loadMovie(recordedFile);
+			currentRecording = latestRecordingIndex;
     }
 }
 
@@ -112,21 +103,44 @@ void ofApp::draw(){
   //------------------------------------------- draw to final fbo.
   fbo.begin();
   	ofClear(0, 0, 0, 255);
+
     shader.begin();
-			shader.setUniformTexture("tex0", omxPlayers[currentVideo].getTextureReference(), 1);
-	    shader.setUniformTexture("tex1", omxPlayerNoise.getTextureReference(), 2);
-	    shader.setUniformTexture("tex2", fbo.getTextureReference(), 3);
-			omxPlayers[currentVideo].draw(0, 0, width, height);
-			omxPlayerNoise.draw(0, 0, width, height);
+			shader.setUniformTexture("VID_1", omxPlayers[0].getTextureReference(), 1);
+	    shader.setUniformTexture("VID_2", omxPlayers[1].getTextureReference(), 2);
+
+	    shader.setUniformTexture("VID_BUFFER", fbo.getTextureReference(), 3);
+
+			omxPlayers[0].draw(0, 0, width, height);
+			omxPlayers[1].draw(0, 0, width, height);
 
 			shader.setUniform1f("TIME", TIME);
-			shader.setUniform1f("mod0", controllers[0]);
-			shader.setUniform1f("mod1", controllers[1]);
-			shader.setUniform1f("mod2", controllers[2]);
-			shader.setUniform1f("mod3", controllers[3]);
-			shader.setUniform1f("mod4", controllers[4]);
-			shader.setUniform1f("mod5", controllers[5]);
-			shader.setUniform1f("mod6", controllers[6]);
+
+			shader.setUniform1f("TOP_KNOB_1", controllers[0]);
+			shader.setUniform1f("TOP_KNOB_2", controllers[1]);
+			shader.setUniform1f("TOP_KNOB_3", controllers[2]);
+			shader.setUniform1f("TOP_KNOB_4", controllers[3]);
+			shader.setUniform1f("TOP_KNOB_5", controllers[4]);
+			shader.setUniform1f("TOP_KNOB_6", controllers[5]);
+			shader.setUniform1f("TOP_KNOB_7", controllers[6]);
+			shader.setUniform1f("TOP_KNOB_8", controllers[7]);
+
+			shader.setUniform1f("BOTTOM_KNOB_1", controllers[8]);
+			shader.setUniform1f("BOTTOM_KNOB_2", controllers[9]);
+			shader.setUniform1f("BOTTOM_KNOB_3", controllers[10]);
+			shader.setUniform1f("BOTTOM_KNOB_4", controllers[11]);
+			shader.setUniform1f("BOTTOM_KNOB_5", controllers[12]);
+			shader.setUniform1f("BOTTOM_KNOB_6", controllers[13]);
+			shader.setUniform1f("BOTTOM_KNOB_7", controllers[14]);
+			shader.setUniform1f("BOTTOM_KNOB_8", controllers[15]);
+
+			shader.setUniform1f("BUTTON_1", controllers[16]);
+			shader.setUniform1f("BUTTON_2", controllers[17]);
+			shader.setUniform1f("BUTTON_3", controllers[18]);
+			shader.setUniform1f("BUTTON_4", controllers[19]);
+			shader.setUniform1f("BUTTON_5", controllers[20]);
+			shader.setUniform1f("BUTTON_6", controllers[21]);
+			shader.setUniform1f("BUTTON_7", controllers[22]);
+			shader.setUniform1f("BUTTON_8", controllers[23]);
 
 	    // we are drawing this fbo so it is used just as a frame.
 	    maskFbo.draw(0, 0);
@@ -166,8 +180,8 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 
 	if(midiMessage.status == MIDI_CONTROL_CHANGE) {
 		if(midiMessage.control == 13) {
+			//TOP ROW
 			controllers[0] = midiMessage.value / 127.0f;
-			ofLog() << "SET CONTROLLER_1 TO " << controllers[0];
 		} else if(midiMessage.control == 14) {
 			controllers[1] = midiMessage.value / 127.0f;
 		} else if(midiMessage.control == 15) {
@@ -180,42 +194,67 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 			controllers[5] = midiMessage.value / 127.0f;
 		} else if(midiMessage.control == 19) {
 			controllers[6] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 20) {
+			controllers[7] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 21) {
+			// BOTTOM ROW
+			controllers[8] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 22) {
+			controllers[9] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 23) {
+			controllers[10] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 24) {
+			controllers[11] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 25) {
+			controllers[12] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 26) {
+			controllers[13] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 27) {
+			controllers[14] = midiMessage.value / 127.0f;
+		} else if(midiMessage.control == 28) {
+			controllers[15] = midiMessage.value / 127.0f;
 		}
 
 		// RECORD
-		if(midiMessage.control == 64 && midiMessage.value == 127){
-	    doStartRecording = true;
-			ofLog() << "START REC";
-		}
+		if(midiMessage.control == 116 && midiMessage.value == 127){
+			if(doStartRecording || doStopRecording) {
+				return;
+			}
 
-		if(midiMessage.control == 65 && midiMessage.value == 127) {
-	    ofLog() << "STOP REC";
-		  doStopRecording = true;
+	    if(recorder.isRecording() == false) {
+				doStartRecording = true;
+				ofLog() << "START REC";
+			} else {
+		    ofLog() << "STOP REC";
+			  doStopRecording = true;
+			}
 		}
 
 		// PLAY VIDEOS
-		if(midiMessage.control == 66 && midiMessage.value == 127) {
+		if(midiMessage.control == 64 && midiMessage.value == 127) {
 			changeToVideo = 0;
 			doLoadNewVideo = true;
-			ofLog() << "PLAY_0";
-		}
-
-		if(midiMessage.control == 67 && midiMessage.value == 127) {
+		} else if(midiMessage.control == 65 && midiMessage.value == 127) {
 			changeToVideo = 1;
 			doLoadNewVideo = true;
-			ofLog() << "PLAY_1";
-		}
-
-		if(midiMessage.control == 68 && midiMessage.value == 127) {
-			//changeToVideo = 2;
+		} else if(midiMessage.control == 66 && midiMessage.value == 127) {
+			changeToVideo = 2;
 			doLoadNewVideo = true;
-			ofLog() << "PLAY_2";
-		}
-
-		if(midiMessage.control == 69 && midiMessage.value == 127) {
-			//changeToVideo = 3;
+		} else if(midiMessage.control == 67 && midiMessage.value == 127) {
+			changeToVideo = 3;
 			doLoadNewVideo = true;
-			ofLog() << "PLAY_3";
+		} else if(midiMessage.control == 68 && midiMessage.value == 127) {
+			changeToVideo = 4;
+			doLoadNewVideo = true;
+		} else if(midiMessage.control == 69 && midiMessage.value == 127) {
+			changeToVideo = 5;
+			doLoadNewVideo = true;
+		} else if(midiMessage.control == 70 && midiMessage.value == 127) {
+			changeToVideo = 6;
+			doLoadNewVideo = true;
+		} else if(midiMessage.control == 71 && midiMessage.value == 127) {
+			changeToVideo = 7;
+			doLoadNewVideo = true;
 		}
 	}
 }
@@ -224,18 +263,9 @@ void ofApp::loadNewVideo() {
 	if(changeToVideo == currentVideo) {
 		return;
 	}
-	//omxPlayers[changeToVideo].seekToTimeInSeconds(0);
-	/*
-		if(omxPlayers[currentVideo].isPlaying() || !omxPlayers[currentVideo].isPaused()) {
-				omxPlayers[currentVideo].setPaused(true);
-		}
 
-		if(!omxPlayers[changeToVideo].isPlaying() || omxPlayers[changeToVideo].isPaused()) {
-			omxPlayers[changeToVideo].seekToTimeInSeconds(0);
-			omxPlayers[changeToVideo].setPaused(false);
-		}
-	*/
 	currentVideo = changeToVideo;
+	omxPlayers[1].loadMovie(videos[currentVideo]);
 	doLoadNewVideo = false;
 }
 

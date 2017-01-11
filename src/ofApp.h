@@ -52,8 +52,8 @@ public:
     ofxMidiIn midiIn;
     ofxMidiMessage midiMessage;
 
-    float controllers[7];
-    string videos[4];
+    float controllers[24];
+    string videos[8];
 
     ofxOMXRecorder recorder;
     GLint colorFormat;
@@ -61,5 +61,6 @@ public:
 
     bool doStartRecording;
     bool doStopRecording;
-    bool loadedRecording;
+    int latestRecordingIndex;
+    int currentRecording;
 };
