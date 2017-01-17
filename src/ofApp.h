@@ -1,7 +1,5 @@
 #pragma once
 
-#define WEBCAM
-
 #include "ofMain.h"
 #include "ofxMidi.h"
 #include "ofxOMXPlayer.h"
@@ -25,12 +23,28 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
 
-	  ofShader shader;
+    // GENERAL
+    vector<string> arguments;
+    float smoothValue(float newValue, float value);
 
-    ofVideoGrabber camera;
+    // AUDIO
+    void audioIn(float * buffer, int bufferSize, int nChannels);
+    void audioOut(ofSoundBuffer& buffer);
+
+    ofSoundStream soundStream;
+    vector <float> audioInput;
+
+    float smoothedVol;
+    float volume;
+
+    // SHADER
+	  ofShader shader;
+    ofFbo fbo;
+    ofFbo maskFbo;
+
+    // PLAYER
 	  map<int, ofxOMXPlayer> omxPlayers;
-    ofxOMXPlayer omxPlayerNoise;
-    ofxOMXPlayerSettings settings;
+    ofxOMXPlayerSettings settingsVideo;
 
     int width;
     int height;
@@ -38,23 +52,21 @@ public:
     int currentVideo;
     int changeToVideo;
     bool doLoadNewVideo;
+    string videos[8];
 
     void loadNewVideo();
-
 		void onVideoEnd(ofxOMXPlayerListenerEventData& e);
 		void onVideoLoop(ofxOMXPlayerListenerEventData& e);
 
-    ofFbo fbo;
-    ofFbo maskFbo;
-
+    // MIDI
     void newMidiMessage(ofxMidiMessage& eventArgs);
 
     ofxMidiIn midiIn;
     ofxMidiMessage midiMessage;
 
     float controllers[24];
-    string videos[8];
 
+    // RECORDER
     ofxOMXRecorder recorder;
     GLint colorFormat;
     unsigned char* pixels;

@@ -4,6 +4,7 @@ ofTexture pixelOutput;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	ofSetLogLevel(OF_LOG_FATAL_ERROR);
 	shader.load("shadersES2/shader");
 
   int width = 320;
@@ -11,7 +12,21 @@ void ofApp::setup(){
 
 	doLoadNewVideo = false;
 	currentVideo = 0;
-	currentRecording = 0;
+	currentRecording = -1;
+
+	// AUDIO
+	soundStream.printDeviceList();
+	soundStream.setDeviceID(0);
+
+	int bufferSize = 256;
+
+	smoothedVol = 0.0;
+	volume = 0.0;
+
+	audioInput.assign(bufferSize, 0.0);
+	soundStream.setup(this, 2, 1, 44100, bufferSize, 4);
+
+	ofLog() << "NEW BUILD";
 
 	// SETUP VIDEOS
 	videos[0] = ofToDataPath("video/video0.mp4", true);
@@ -24,14 +39,15 @@ void ofApp::setup(){
 	videos[7] = ofToDataPath("video/video7.mp4", true);
 
 	for (int i=0; i<2; i++) {
-		ofxOMXPlayerSettings settings;
+		ofxOMXPlayerSettings settingsVideo;
 
-		settings.useHDMIForAudio = false;
-		settings.enableAudio = false;
-		settings.videoPath = videos[i];
-		omxPlayers[i].setup(settings);
+		settingsVideo.useHDMIForAudio = false;
+		settingsVideo.enableAudio = false;
+		settingsVideo.videoPath = videos[i];
+		omxPlayers[i].setup(settingsVideo);
 	}
 
+	// SHADER
   fbo.allocate(width, height);
   maskFbo.allocate(width, height);
 
@@ -53,7 +69,7 @@ void ofApp::setup(){
 	settingsRecorder.height = height;
 	settingsRecorder.fps = 60;
 	settingsRecorder.colorFormat = colorFormat;
-	settingsRecorder.bitrateMegabytesPerSecond = 1.0;  //default 2.0, max untested
+	settingsRecorder.bitrateMegabytesPerSecond = 2.0;  //default 2.0, max untested
 	settingsRecorder.enablePrettyFileName = false; //default true
 	recorder.setup(settingsRecorder);
 
@@ -64,6 +80,8 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+		volume = ofMap(smoothedVol, 0.0, 0.17, 0.0, 1.0, true);
+
 		if(doStartRecording) {
 	    doStartRecording = false;
 	    recorder.startRecording();
@@ -88,6 +106,7 @@ void ofApp::update(){
 			string recordedFile = recorder.recordings[latestRecordingIndex].path();
 			omxPlayers[0].loadMovie(recordedFile);
 			currentRecording = latestRecordingIndex;
+			memset(pixels, 0x00, width * height * 3);
     }
 }
 
@@ -114,7 +133,9 @@ void ofApp::draw(){
 			omxPlayers[1].draw(0, 0, width, height);
 
 			shader.setUniform1f("TIME", TIME);
-
+			shader.setUniform1f("VOLUME", volume);
+			shader.setUniform1f("VOLUME2", smoothedVol);
+			
 			shader.setUniform1f("TOP_KNOB_1", controllers[0]);
 			shader.setUniform1f("TOP_KNOB_2", controllers[1]);
 			shader.setUniform1f("TOP_KNOB_3", controllers[2]);
@@ -165,6 +186,8 @@ void ofApp::draw(){
 	info << "control: " << midiMessage.control << endl;
 	info << "value: " << midiMessage.value << endl;
 	info << "pitch: " << midiMessage.pitch << endl;
+	info << "volume: " << volume << endl;
+	info << "VOLME2: " << smoothedVol << endl;
 
 	if (isRecording) {
     info << "FRAMES RECORDED: "  << recorder.getFrameCounter() << endl;
@@ -212,7 +235,7 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 		} else if(midiMessage.control == 27) {
 			controllers[14] = midiMessage.value / 127.0f;
 		} else if(midiMessage.control == 28) {
-			controllers[15] = midiMessage.value / 127.0f;
+			controllers[15] = midiMessage.value / 127.0f; // NO SMOOTHING AS ITS THE SMOOTHER :)
 		}
 
 		// RECORD
@@ -259,6 +282,12 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 	}
 }
 
+float ofApp::smoothValue(float newValue, float value) {
+	value *= controllers[15];
+	value += (1.0 - controllers[15]) * newValue;
+	return value;
+}
+
 void ofApp::loadNewVideo() {
 	if(changeToVideo == currentVideo) {
 		return;
@@ -268,6 +297,35 @@ void ofApp::loadNewVideo() {
 	omxPlayers[1].loadMovie(videos[currentVideo]);
 	doLoadNewVideo = false;
 }
+
+//--------------------------------------------------------------
+void ofApp::audioIn(float * buffer, int bufferSize, int nChannels){
+	float curVol = 0.0;
+	int numCounted = 0;
+
+	//lets go through each sample and calculate the root mean square which is a rough way to calculate volume
+	for(int i = 0 ; i < bufferSize; i++){
+	  audioInput[i] = buffer[i];
+	  curVol += audioInput[i]*audioInput[i] * 0.25;
+	  numCounted+=2;
+	}
+
+	//this is how we get the mean of rms :)
+	curVol /= (float)numCounted;
+	curVol = sqrt( curVol );
+
+	smoothedVol = smoothValue(curVol, smoothedVol);
+}
+
+//--------------------------------------------------------------
+void ofApp::audioOut(ofSoundBuffer & buffer){
+	for (int i = 0; i < buffer.getNumFrames(); i++){
+		buffer[i*buffer.getNumChannels()    ] = audioInput[i];
+		buffer[i*buffer.getNumChannels() + 1] = audioInput[i];
+	}
+}
+
+
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
