@@ -23,18 +23,17 @@ uniform float BOTTOM_KNOB_8;
 
 uniform float TIME;
 uniform float VOLUME;
-uniform float VOLUME2; // SMOOTH IS GOOD AROUND 0.52
+uniform float VOLUME_SMOOTH; // SMOOTH IS GOOD AROUND 0.52
 
 varying vec2 texCoordVarying;
 
-float colorFlip = BOTTOM_KNOB_1;
-float colorVal = BOTTOM_KNOB_2;
-float contrastAdjust = BOTTOM_KNOB_3;
-float noiseAmount = BOTTOM_KNOB_4;
-float blackAndWhite = BOTTOM_KNOB_5;
-float rotation = BOTTOM_KNOB_6;
-float volumeamount = BOTTOM_KNOB_7;
-float echoTrace = BOTTOM_KNOB_8;
+float colorizeVideo = BOTTOM_KNOB_1;
+float colorizeHue = BOTTOM_KNOB_2;
+float colorProcess = BOTTOM_KNOB_3;
+float noiseAmount = BOTTOM_KNOB_5;
+float strobeAmount = BOTTOM_KNOB_6;
+float rotation = BOTTOM_KNOB_7;
+float volumeamount = BOTTOM_KNOB_8;
 
 float VID_1_OPACITY = TOP_KNOB_1;
 float VID_2_OPACITY = TOP_KNOB_2;
@@ -43,14 +42,14 @@ float zoom = TOP_KNOB_4;
 float kaleido = TOP_KNOB_5;
 float distortion = TOP_KNOB_6;
 float glitch = TOP_KNOB_7;
+float echoTrace = TOP_KNOB_7;
 float feedback = TOP_KNOB_8;
 //float blendmode = floor(BOTTOM_KNOB_7 * 4.);
 
 
 // SOUND
-float vol_max = 0.18; // VOL TRESH IS GOOD AROUND 0.35
-float volume_tresh = .063;
-float volume = VOLUME * volumeamount;//BOTTOM_KNOB_7 + clamp((VOLUME2 - volume_tresh) / vol_max - volume_tresh, 0., 1.);
+float volume_nosmooth = clamp(VOLUME * volumeamount * 20., 0., 2.);//BOTTOM_KNOB_7 + clamp((VOLUME2 - volume_tresh) / vol_max - volume_tresh, 0., 1.);
+float volume = clamp(VOLUME_SMOOTH * volumeamount * 20., 0., 2.);//BOTTOM_KNOB_7 + clamp((VOLUME2 - volume_tresh) / vol_max - volume_tresh, 0., 1.);
 
 // CONSTANTS
 const vec4 lumcoeff = vec4(0.299, 0.587, 0.114, 0.0);
@@ -120,8 +119,9 @@ vec4 tunnel(vec2 uv) {
 	  }
 
 		float pixelLuma = gray(pixel);
-		pixel = pixel / max(1., pow(5., cos(PI * .5 + p * PI)));
-    color = mix(color, pixel, clamp(gray(pixel) - (-0.5 + tunnelize * 1.6) * 0.4, 0., 1.));
+		pixel = pixel / max(1., pow(5., abs(p - 0.3)));
+		//pixel = pixel / max(1., pow(8., p));
+    color = mix(color, pixel, clamp(gray(pixel) - (-0.5 + tunnelize * 1.5) * 0.2, 0., 1.));
 	}
 	return color;
 }
@@ -144,6 +144,11 @@ vec2 kaleidoscope(vec2 uv, float sides) {
 	return center + uv;
 }
 
+vec4 strobe(vec4 color, float speed) {
+	float eq = mod(floor(TIME * 12.), 2.0) * strobeAmount;
+	//float strobeColor = step( 0.0 , eq ) * (1.0 - step( 1.0 , eq));
+	return vec4(color.rgb * vec3(1.0 + eq * .5) + eq * .05, color.a);
+}
 
 vec2 pinch(vec2 uv, float amount) {
 	float k = -1. * amount;
@@ -154,8 +159,8 @@ vec2 pinch(vec2 uv, float amount) {
 
 
 void main() {
-    vec2 uv = texCoordVarying;
-  	vec3 hsl = vec3(colorVal, colorFlip, colorFlip * 0.75);
+    vec2 uv = texCoordVarying;      // we leave 0.2 to keep lowest as bw
+  	vec3 hsl = vec3(0.65 + colorizeHue * 0.8, colorizeVideo, colorizeVideo * 0.75);
     float noise = noiseGenerate(uv + TIME * 0.1);
 
     //GLITCH
@@ -173,29 +178,30 @@ void main() {
 
     // WAVE
     if(distortion > 0.) {
-      uvWAVE = videoWave(uv, 15. * distortion);
+      uvWAVE = videoWave(uv, 7. + 7. * distortion);
     }
 
   	// MIRROR EDGE
-		vec2 uvZOOM = (uv - 0.5) * (0.5 + (zoom * 1.5 + volume) * 0.5);
+		vec2 uvZOOM = (uv - 0.5) * (0.5 + (zoom * 2. + volume * 0.5 ) * 0.5);
 		uvZOOM = mod(uvZOOM + center / 2., 1.0);
   	uvZOOM = 2.0 * abs(uvZOOM - center);
 
 		// ROTATION
-		vec2 uvFG = rotate(uvZOOM, rotation);
+    float rotationOffset = 0.;
+    if(kaleido > 0.) {
+      rotationOffset = -0.5;
+    }
+		vec2 uvFG = rotate(uvZOOM, rotationOffset + rotation);
 
 		// KALEIDO
 		if(kaleido > 0.) {
 			uvFG = kaleidoscope(uvFG, kaleido);
 		}
 
-		// PINCH
-		//uvFG = pinch(uvFG, centerVal(0., 2., 1.0 - zoom));
-
 
     // TEXTURES
     vec4 colorVID_2 = texture2D(VID_2, uvFG + uvDIST + uvWAVE) * VID_1_OPACITY;
-    vec4 colorVID_1 = texture2D(VID_1, uvZOOM) * VID_2_OPACITY;
+    vec4 colorVID_1 = texture2D(VID_1, rotate(uvZOOM, 0.)) * VID_2_OPACITY;
 		vec4 colorBG_COL = vec4(hsv2rgb(hsl), 1.0) ;
 
     // TUNNEL
@@ -206,37 +212,44 @@ void main() {
     // BLEND
     vec4 color = blend(colorBG_COL, colorVID_2);
 
+    // BLEND VID 1 AND VID 2
+    color = blend(color, colorVID_1) + centerVal(0., 0.1 * noiseAmount, noise);
+
+    // B&W
+    if(colorizeHue > 0.8) {
+      float luminance = dot(color, lumcoeff);
+      vec4 colorBW = mix(vec4(0.0, 0.0, 0.0, 1.0), vec4(1.0), luminance);
+    	color = mix(color, colorBW, (colorizeHue - 0.8) / 0.2);
+    }
+
   	// VIGNETTE
-  	color = vignette(uv, color, 0.85);
+    color = vignette(uv, color, 0.85 * colorProcess);
 
-
-  	//LEVELS
-  	float gamma = volume * .5;
-  	float contrast = 0.5 + contrastAdjust;
-  	float exposure =  volume * .5;
-  	float blackLevel = 0.;
+    //LEVELS
+    float gamma = colorProcess * .125 + volume * .3;
+    float contrast = 0.5;
+    float exposure =  colorProcess * .125 + volume * .2;
+    float blackLevel = 0. + colorProcess * .01;
   	vec4 inputRange = min(max(color - vec4(gamma), vec4(0.0)) / (vec4(1.0 - exposure) - vec4(gamma)), vec4(1.0));
   	inputRange = pow(inputRange, vec4(1.0 / (1.5 - contrast)));
   	color = mix(vec4(blackLevel), vec4(1.0), inputRange);
 
-    color = blend(color, colorVID_1) + centerVal(0., 0.1 * noiseAmount, noise);
-
-    if(blackAndWhite > 0.) {
-      float luminance = dot(color, lumcoeff);
-      vec4 colorBW = mix(vec4(0.0, 0.0, 0.0, 1.0), vec4(1.0), luminance);
-    	color = mix(color, colorBW, blackAndWhite);
+    // STROBE
+    if(strobeAmount > 0.) {
+      color = strobe(color, strobeAmount);
     }
 
     // ECHO TRACE
     if(echoTrace > 0.) {
-    	color = mix(color, texture2D(VID_BUFFER, uv), (gray(color) < (echoTrace * 0.3) - volume) ? 1.0 : 0.0);
+    	color = mix(color, texture2D(VID_BUFFER, uv), (gray(color) < (echoTrace * 0.6) - volume) ? 1.0 : 0.0);
     }
 
+    // FEEDBACK
     if(feedback > 0.) {
       vec4 colorFeedback = texture2D(VID_BUFFER, vec2(0.5) + (uv + uvDIST - 0.5) * centerVal(1.0, 0.01, zoom));
  			float lumaColor = gray(color);
  			float lumaFeedback = gray(colorFeedback);
-      float treshold = 1.0 - (volume * feedback);
+      float treshold = 1.0 - (volume_nosmooth * feedback);
 
       if(lumaFeedback >= lumaColor - (1.0 - treshold) && lumaColor > treshold) {
         colorFeedback = color;

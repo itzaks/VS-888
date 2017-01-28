@@ -4,29 +4,31 @@ ofTexture pixelOutput;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	ofSetLogLevel(OF_LOG_FATAL_ERROR);
-	shader.load("shadersES2/shader");
+	//ofSetLogLevel(OF_LOG_FATAL_ERROR);
+	ofHideCursor();
+
+	shader.load("shaders/shader");
 
   int width = 320;
 	int height = 180;
+
+	showMenu = false;
 
 	doLoadNewVideo = false;
 	currentVideo = 0;
 	currentRecording = -1;
 
 	// AUDIO
+	int bufferSize = 256;
+	smoothedVol = 0.0;
+	smoothedVolLite = 0.0;
+	volume = 0.0;
+	volumeSmooth = 0.0;
+
 	soundStream.printDeviceList();
 	soundStream.setDeviceID(0);
-
-	int bufferSize = 256;
-
-	smoothedVol = 0.0;
-	volume = 0.0;
-
-	audioInput.assign(bufferSize, 0.0);
-	soundStream.setup(this, 2, 1, 44100, bufferSize, 4);
-
-	ofLog() << "NEW BUILD";
+	//inputBuffer.assign(bufferSize, 0.0);
+	soundStream.setup(this, 2, 1, 11025, bufferSize, 4);
 
 	// SETUP VIDEOS
 	videos[0] = ofToDataPath("video/video0.mp4", true);
@@ -67,24 +69,33 @@ void ofApp::setup(){
 	ofxOMXRecorderSettings settingsRecorder;
 	settingsRecorder.width = width;
 	settingsRecorder.height = height;
-	settingsRecorder.fps = 60;
+	settingsRecorder.fps = 40;
 	settingsRecorder.colorFormat = colorFormat;
-	settingsRecorder.bitrateMegabytesPerSecond = 2.0;  //default 2.0, max untested
+	settingsRecorder.bitrateMegabytesPerSecond = 6.0;  //default 2.0, max untested
 	settingsRecorder.enablePrettyFileName = false; //default true
 	recorder.setup(settingsRecorder);
 
-	int dataSize = width * height * numColors;
-	pixels = new unsigned char[dataSize];
-	memset(pixels, 0xff, dataSize); //set to white
+	recFrameSize = settingsRecorder.width * settingsRecorder.height * numColors;
+	pixels = new unsigned char[recFrameSize];
+	memset(pixels, 0x00, recFrameSize); //set to white
+
+	ofDirectory::removeDirectory("recordings", true);
+	if(!ofDirectory::doesDirectoryExist("recordings")) {
+		ofDirectory::createDirectory("recordings");
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-		volume = ofMap(smoothedVol, 0.0, 0.17, 0.0, 1.0, true);
+		volume = ofMap(smoothedVolLite, 0.0, 0.17, 0.0, 1.0, true);
+		volumeSmooth = ofMap(smoothedVol, 0.0, 0.17, 0.0, 1.0, true);
 
 		if(doStartRecording) {
 	    doStartRecording = false;
-	    recorder.startRecording();
+			memset(pixels, 0x00, recFrameSize);
+			string absoluteFilePath;
+			absoluteFilePath = ofToDataPath("recordings/" + ofGetTimestampString() + ".h264", true);
+			recorder.startRecording(absoluteFilePath);
 		}
 
 	  if (doStopRecording) {
@@ -103,10 +114,11 @@ void ofApp::update(){
 
 		int latestRecordingIndex = recorder.recordings.size() - 1;
 		if (latestRecordingIndex != -1 && currentRecording != latestRecordingIndex) {
+			//videos[7] = recorder.recordings[latestRecordingIndex].path();
 			string recordedFile = recorder.recordings[latestRecordingIndex].path();
 			omxPlayers[0].loadMovie(recordedFile);
 			currentRecording = latestRecordingIndex;
-			memset(pixels, 0x00, width * height * 3);
+			memset(pixels, 0x00, recFrameSize);
     }
 }
 
@@ -134,8 +146,8 @@ void ofApp::draw(){
 
 			shader.setUniform1f("TIME", TIME);
 			shader.setUniform1f("VOLUME", volume);
-			shader.setUniform1f("VOLUME2", smoothedVol);
-			
+			shader.setUniform1f("VOLUME_SMOOTH", volumeSmooth);
+
 			shader.setUniform1f("TOP_KNOB_1", controllers[0]);
 			shader.setUniform1f("TOP_KNOB_2", controllers[1]);
 			shader.setUniform1f("TOP_KNOB_3", controllers[2]);
@@ -154,15 +166,6 @@ void ofApp::draw(){
 			shader.setUniform1f("BOTTOM_KNOB_7", controllers[14]);
 			shader.setUniform1f("BOTTOM_KNOB_8", controllers[15]);
 
-			shader.setUniform1f("BUTTON_1", controllers[16]);
-			shader.setUniform1f("BUTTON_2", controllers[17]);
-			shader.setUniform1f("BUTTON_3", controllers[18]);
-			shader.setUniform1f("BUTTON_4", controllers[19]);
-			shader.setUniform1f("BUTTON_5", controllers[20]);
-			shader.setUniform1f("BUTTON_6", controllers[21]);
-			shader.setUniform1f("BUTTON_7", controllers[22]);
-			shader.setUniform1f("BUTTON_8", controllers[23]);
-
 	    // we are drawing this fbo so it is used just as a frame.
 	    maskFbo.draw(0, 0);
   	shader.end();
@@ -174,26 +177,28 @@ void ofApp::draw(){
   fbo.end();
   fbo.draw(0, 0, ofGetWidth(), ofGetHeight());
 
-  bool isRecording = recorder.isRecording();
+	if(showMenu) {
+		bool isRecording = recorder.isRecording();
 
-  stringstream info;
-  info << "App FPS: " << ofGetFrameRate() << endl;
-  info << "PRESS 1 to START RECORDING "   << isRecording << endl;
-  info << "PRESS 2 to STOP RECORDING "    << isRecording << endl;
+	  stringstream info;
+	  info << "App FPS: " << ofGetFrameRate() << endl;
+	  info << "PRESS 1 to START RECORDING "   << isRecording << endl;
+	  info << "PRESS 2 to STOP RECORDING "    << isRecording << endl;
 
-	// draw the last recieved message contents to the screen
-	info << "Received: " << ofxMidiMessage::getStatusString(midiMessage.status) << endl;
-	info << "control: " << midiMessage.control << endl;
-	info << "value: " << midiMessage.value << endl;
-	info << "pitch: " << midiMessage.pitch << endl;
-	info << "volume: " << volume << endl;
-	info << "VOLME2: " << smoothedVol << endl;
+		// draw the last recieved message contents to the screen
+		info << "Received: " << ofxMidiMessage::getStatusString(midiMessage.status) << endl;
+		info << "control: " << midiMessage.control << endl;
+		info << "value: " << midiMessage.value << endl;
+		info << "pitch: " << midiMessage.pitch << endl;
+		info << "Volume: " << volume << endl;
+		info << "Volume Smooth: " << volumeSmooth << endl;
 
-	if (isRecording) {
-    info << "FRAMES RECORDED: "  << recorder.getFrameCounter() << endl;
-  }
+		if (isRecording) {
+	    info << "FRAMES RECORDED: "  << recorder.getFrameCounter() << endl;
+	  }
 
-	ofDrawBitmapStringHighlight(info.str(), 100, 100, ofColor::black, ofColor::yellow);
+		ofDrawBitmapStringHighlight(info.str(), 100, 100, ofColor::black, ofColor::yellow);
+	}
 }
 
 //--------------------------------------------------------------
@@ -202,44 +207,16 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 	midiMessage = msg;
 
 	if(midiMessage.status == MIDI_CONTROL_CHANGE) {
-		if(midiMessage.control == 13) {
-			//TOP ROW
-			controllers[0] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 14) {
-			controllers[1] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 15) {
-			controllers[2] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 16) {
-			controllers[3] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 17) {
-			controllers[4] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 18) {
-			controllers[5] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 19) {
-			controllers[6] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 20) {
-			controllers[7] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 21) {
-			// BOTTOM ROW
-			controllers[8] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 22) {
-			controllers[9] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 23) {
-			controllers[10] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 24) {
-			controllers[11] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 25) {
-			controllers[12] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 26) {
-			controllers[13] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 27) {
-			controllers[14] = midiMessage.value / 127.0f;
-		} else if(midiMessage.control == 28) {
-			controllers[15] = midiMessage.value / 127.0f; // NO SMOOTHING AS ITS THE SMOOTHER :)
+		if(midiMessage.control >= 13 && midiMessage.control <= 28) {
+			controllers[midiMessage.control - 13] = midiMessage.value / 127.0f;
 		}
 
 		// RECORD
-		if(midiMessage.control == 116 && midiMessage.value == 127){
+		if(midiMessage.control == 114){
+			showMenu = (midiMessage.value == 127);
+		}
+
+		if(midiMessage.control == 115 && midiMessage.value == 127){
 			if(doStartRecording || doStopRecording) {
 				return;
 			}
@@ -253,42 +230,37 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 			}
 		}
 
+		if(midiMessage.control == 116 && midiMessage.value == 127) {
+			activeVideo = 0;
+		}
+
+		if(midiMessage.control == 117 && midiMessage.value == 127) {
+			activeVideo = 1;
+		}
+
 		// PLAY VIDEOS
-		if(midiMessage.control == 64 && midiMessage.value == 127) {
-			changeToVideo = 0;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 65 && midiMessage.value == 127) {
-			changeToVideo = 1;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 66 && midiMessage.value == 127) {
-			changeToVideo = 2;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 67 && midiMessage.value == 127) {
-			changeToVideo = 3;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 68 && midiMessage.value == 127) {
-			changeToVideo = 4;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 69 && midiMessage.value == 127) {
-			changeToVideo = 5;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 70 && midiMessage.value == 127) {
-			changeToVideo = 6;
-			doLoadNewVideo = true;
-		} else if(midiMessage.control == 71 && midiMessage.value == 127) {
-			changeToVideo = 7;
+		if(midiMessage.control >= 64 && midiMessage.control <= 71) {
+			changeToVideo = midiMessage.control - 64;
 			doLoadNewVideo = true;
 		}
 	}
 }
 
 float ofApp::smoothValue(float newValue, float value) {
-	value *= controllers[15];
-	value += (1.0 - controllers[15]) * newValue;
+	float smoothing = 0.7;
+	value *= smoothing;
+	value += (1.0 - smoothing) * newValue;
 	return value;
 }
 
 void ofApp::loadNewVideo() {
+	// TODO dont load already loaded
+	/*
+	currentVideo = changeToVideo;
+	omxPlayers[activeVideo].loadMovie(videos[currentVideo]);
+	doLoadNewVideo = false;*/
+
+
 	if(changeToVideo == currentVideo) {
 		return;
 	}
@@ -299,15 +271,17 @@ void ofApp::loadNewVideo() {
 }
 
 //--------------------------------------------------------------
-void ofApp::audioIn(float * buffer, int bufferSize, int nChannels){
+void ofApp::audioIn(ofSoundBuffer& buffer) {
+	ofScopedLock lock(audioMutex);
+	this->inputBuffer = buffer;
+
 	float curVol = 0.0;
 	int numCounted = 0;
 
 	//lets go through each sample and calculate the root mean square which is a rough way to calculate volume
-	for(int i = 0 ; i < bufferSize; i++){
-	  audioInput[i] = buffer[i];
-	  curVol += audioInput[i]*audioInput[i] * 0.25;
-	  numCounted+=2;
+	for(int i = 0 ; i < buffer.getNumFrames(); i++){
+	  curVol += buffer[i] * buffer[i] * 0.25;
+	  numCounted += 2;
 	}
 
 	//this is how we get the mean of rms :)
@@ -315,14 +289,13 @@ void ofApp::audioIn(float * buffer, int bufferSize, int nChannels){
 	curVol = sqrt( curVol );
 
 	smoothedVol = smoothValue(curVol, smoothedVol);
+	smoothedVolLite = curVol;
 }
 
 //--------------------------------------------------------------
-void ofApp::audioOut(ofSoundBuffer & buffer){
-	for (int i = 0; i < buffer.getNumFrames(); i++){
-		buffer[i*buffer.getNumChannels()    ] = audioInput[i];
-		buffer[i*buffer.getNumChannels() + 1] = audioInput[i];
-	}
+void ofApp::audioOut(ofSoundBuffer& buffer) {
+	ofScopedLock lock(audioMutex);
+  this->inputBuffer.copyTo(buffer);
 }
 
 

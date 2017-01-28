@@ -26,16 +26,22 @@ public:
     // GENERAL
     vector<string> arguments;
     float smoothValue(float newValue, float value);
+    bool showMenu;
 
     // AUDIO
-    void audioIn(float * buffer, int bufferSize, int nChannels);
+    void audioIn(ofSoundBuffer& buffer);
     void audioOut(ofSoundBuffer& buffer);
+
+    ofMutex audioMutex;
+    ofSoundBuffer inputBuffer;
 
     ofSoundStream soundStream;
     vector <float> audioInput;
 
     float smoothedVol;
+    float smoothedVolLite;
     float volume;
+    float volumeSmooth;
 
     // SHADER
 	  ofShader shader;
@@ -49,6 +55,7 @@ public:
     int width;
     int height;
 
+    int activeVideo;
     int currentVideo;
     int changeToVideo;
     bool doLoadNewVideo;
@@ -69,6 +76,7 @@ public:
     // RECORDER
     ofxOMXRecorder recorder;
     GLint colorFormat;
+    int recFrameSize;
     unsigned char* pixels;
 
     bool doStartRecording;
