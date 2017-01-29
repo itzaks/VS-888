@@ -1,7 +1,8 @@
 precision highp float;
 
-uniform sampler2D VID_1;
-uniform sampler2D VID_2;
+uniform sampler2D IMAGE;
+uniform sampler2D VIDEO;
+uniform sampler2D TEXTURE;
 uniform sampler2D VID_BUFFER;
 
 uniform float TOP_KNOB_1;
@@ -30,13 +31,14 @@ varying vec2 texCoordVarying;
 float colorizeVideo = BOTTOM_KNOB_1;
 float colorizeHue = BOTTOM_KNOB_2;
 float colorProcess = BOTTOM_KNOB_3;
+float noiseTexture = BOTTOM_KNOB_4;
 float noiseAmount = BOTTOM_KNOB_5;
-float strobeAmount = BOTTOM_KNOB_6;
-float rotation = BOTTOM_KNOB_7;
+float rotation = BOTTOM_KNOB_6;
+float strobeAmount = BOTTOM_KNOB_7;
 float volumeamount = BOTTOM_KNOB_8;
 
-float VID_1_OPACITY = TOP_KNOB_1;
-float VID_2_OPACITY = TOP_KNOB_2;
+float VIDEO_OPACITY = TOP_KNOB_1;
+float IMAGE_OPACITY = TOP_KNOB_2;
 float tunnelize = TOP_KNOB_3;
 float zoom = TOP_KNOB_4;
 float kaleido = TOP_KNOB_5;
@@ -113,7 +115,7 @@ vec4 tunnel(vec2 uv) {
 		float p = fract(k + float(i) * n);
 		float z = (p * 5.);
 		vec2 uv = 0.5 + uv * z;
-		vec4 pixel = texture2D(VID_2, uv);
+		vec4 pixel = texture2D(VIDEO, uv);
 		if ((uv.x < 0.0) || (uv.y < 0.0) || (uv.x > 1.0) || (uv.y > 1.0)) {
 			pixel = vec4(0.0);
 	  }
@@ -146,7 +148,6 @@ vec2 kaleidoscope(vec2 uv, float sides) {
 
 vec4 strobe(vec4 color, float speed) {
 	float eq = -1. * strobeAmount * 2. + mod(floor(TIME * 12.), 2.0) * strobeAmount * 2.;
-	//float strobeColor = step( 0.0 , eq ) * (1.0 - step( 1.0 , eq));
 	return vec4(color.rgb * (1. + eq * 2.), color.a);
 }
 
@@ -157,6 +158,9 @@ vec2 pinch(vec2 uv, float amount) {
 	return f * (uv.xy - 0.5) + 0.5;
 }
 
+float quadOffset(float coord, float offset, float selector) {
+  return coord * .5 + mod(floor(offset + selector * 2.), 2.) * .5;
+}
 
 void main() {
     vec2 uv = texCoordVarying;      // we leave 0.2 to keep lowest as bw
@@ -200,20 +204,20 @@ void main() {
 
 
     // TEXTURES
-    vec4 colorVID_2 = texture2D(VID_2, uvFG + uvDIST + uvWAVE) * VID_1_OPACITY;
-    vec4 colorVID_1 = texture2D(VID_1, rotate(uvZOOM, 0.)) * VID_2_OPACITY;
+    vec4 colorVIDEO = texture2D(VIDEO, uvFG + uvDIST + uvWAVE) * VIDEO_OPACITY;
+    vec4 colorIMAGE = texture2D(IMAGE, rotate(uvZOOM, 0.)) * IMAGE_OPACITY;
 		vec4 colorBG_COL = vec4(hsv2rgb(hsl), 1.0) ;
 
     // TUNNEL
     if(tunnelize > 0.) {
-      colorVID_2 = mix(colorVID_2, tunnel(uvFG + uvDIST + uvWAVE), min(1., tunnelize * 2.));
+      colorVIDEO = mix(colorVIDEO, tunnel(uvFG + uvDIST + uvWAVE), min(1., tunnelize * 2.));
     }
 
     // BLEND
-    vec4 color = blend(colorBG_COL, colorVID_2);
+    vec4 color = blend(colorBG_COL, colorVIDEO);
 
     // BLEND VID 1 AND VID 2
-    color = blend(color, colorVID_1) + centerVal(0., 0.1 * noiseAmount, noise);
+    color = blend(color, colorIMAGE) + centerVal(0., 0.1 * noiseAmount, noise);
 
     // B&W
     if(colorizeHue > 0.8) {
@@ -237,6 +241,14 @@ void main() {
     // STROBE
     if(strobeAmount > 0.) {
       color = strobe(color, strobeAmount);
+    }
+
+    // TEXTURE
+    if(noiseTexture > 0.) {
+    	vec2 uv = texCoordVarying.xy;
+    	uv = vec2(quadOffset(uv.x, 0., noiseTexture), quadOffset(uv.y, 0.5, noiseTexture));
+    	vec4 noise = texture2D(TEXTURE, uv);
+    	color = color + noise;
     }
 
     // ECHO TRACE
