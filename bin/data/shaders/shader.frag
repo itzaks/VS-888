@@ -121,7 +121,7 @@ vec4 tunnel(vec2 uv) {
 		float pixelLuma = gray(pixel);
 		pixel = pixel / max(1., pow(5., abs(p - 0.3)));
 		//pixel = pixel / max(1., pow(8., p));
-    color = mix(color, pixel, clamp(gray(pixel) - (-0.5 + tunnelize * 1.5) * 0.2, 0., 1.));
+    color = mix(color, pixel, gray(pixel));
 	}
 	return color;
 }
@@ -145,9 +145,9 @@ vec2 kaleidoscope(vec2 uv, float sides) {
 }
 
 vec4 strobe(vec4 color, float speed) {
-	float eq = mod(floor(TIME * 12.), 2.0) * strobeAmount;
+	float eq = -1. * strobeAmount * 2. + mod(floor(TIME * 12.), 2.0) * strobeAmount * 2.;
 	//float strobeColor = step( 0.0 , eq ) * (1.0 - step( 1.0 , eq));
-	return vec4(color.rgb * vec3(1.0 + eq * .5) + eq * .05, color.a);
+	return vec4(color.rgb * (1. + eq * 2.), color.a);
 }
 
 vec2 pinch(vec2 uv, float amount) {

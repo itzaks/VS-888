@@ -71,7 +71,7 @@ void ofApp::setup(){
 	settingsRecorder.height = height;
 	settingsRecorder.fps = 40;
 	settingsRecorder.colorFormat = colorFormat;
-	settingsRecorder.bitrateMegabytesPerSecond = 6.0;  //default 2.0, max untested
+	settingsRecorder.bitrateMegabytesPerSecond = 3.0;  //default 2.0, max untested
 	settingsRecorder.enablePrettyFileName = false; //default true
 	recorder.setup(settingsRecorder);
 
@@ -92,7 +92,6 @@ void ofApp::update(){
 
 		if(doStartRecording) {
 	    doStartRecording = false;
-			memset(pixels, 0x00, recFrameSize);
 			string absoluteFilePath;
 			absoluteFilePath = ofToDataPath("recordings/" + ofGetTimestampString() + ".h264", true);
 			recorder.startRecording(absoluteFilePath);
