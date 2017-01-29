@@ -15,7 +15,7 @@ void ofApp::setup(){
 	showMenu = false;
 
 	doLoadNewVideo = false;
-	currentVideo = 0;
+	selectedPad = 0;
 	currentRecording = -1;
 
 	// AUDIO
@@ -27,7 +27,6 @@ void ofApp::setup(){
 
 	soundStream.printDeviceList();
 	soundStream.setDeviceID(0);
-	//inputBuffer.assign(bufferSize, 0.0);
 	soundStream.setup(this, 2, 1, 11025, bufferSize, 4);
 
 	// SETUP VIDEOS
@@ -45,9 +44,26 @@ void ofApp::setup(){
 
 		settingsVideo.useHDMIForAudio = false;
 		settingsVideo.enableAudio = false;
-		settingsVideo.videoPath = videos[i];
+		if(i == 0) {
+			settingsVideo.videoPath = videos[i];
+		} else {
+			settingsVideo.videoPath = ofToDataPath("video/texture.mp4", true);
+		}
+
 		omxPlayers[i].setup(settingsVideo);
 	}
+
+	// SETUP IMAGES
+	images[0] = ofToDataPath("images/image0.jpg", true);
+	images[1] = ofToDataPath("images/image1.jpg", true);
+	images[2] = ofToDataPath("images/image2.jpg", true);
+	images[3] = ofToDataPath("images/image3.jpg", true);
+	images[4] = ofToDataPath("images/image4.jpg", true);
+	images[5] = ofToDataPath("images/image5.jpg", true);
+	images[6] = ofToDataPath("images/image6.jpg", true);
+	images[7] = ofToDataPath("images/image7.jpg", true);
+
+	image.loadImage(images[0]);
 
 	// SHADER
   fbo.allocate(width, height);
@@ -69,7 +85,7 @@ void ofApp::setup(){
 	ofxOMXRecorderSettings settingsRecorder;
 	settingsRecorder.width = width;
 	settingsRecorder.height = height;
-	settingsRecorder.fps = 40;
+	settingsRecorder.fps = 60;
 	settingsRecorder.colorFormat = colorFormat;
 	settingsRecorder.bitrateMegabytesPerSecond = 3.0;  //default 2.0, max untested
 	settingsRecorder.enablePrettyFileName = false; //default true
@@ -113,9 +129,9 @@ void ofApp::update(){
 
 		int latestRecordingIndex = recorder.recordings.size() - 1;
 		if (latestRecordingIndex != -1 && currentRecording != latestRecordingIndex) {
-			//videos[7] = recorder.recordings[latestRecordingIndex].path();
-			string recordedFile = recorder.recordings[latestRecordingIndex].path();
-			omxPlayers[0].loadMovie(recordedFile);
+			videos[7] = recorder.recordings[latestRecordingIndex].path();
+			//string recordedFile = recorder.recordings[latestRecordingIndex].path();
+			//omxPlayers[0].loadMovie(recordedFile);
 			currentRecording = latestRecordingIndex;
 			memset(pixels, 0x00, recFrameSize);
     }
@@ -137,11 +153,13 @@ void ofApp::draw(){
     shader.begin();
 			shader.setUniformTexture("VID_1", omxPlayers[0].getTextureReference(), 1);
 	    shader.setUniformTexture("VID_2", omxPlayers[1].getTextureReference(), 2);
+	    shader.setUniformTexture("IMAGE", image, 2);
 
 	    shader.setUniformTexture("VID_BUFFER", fbo.getTextureReference(), 3);
 
 			omxPlayers[0].draw(0, 0, width, height);
 			omxPlayers[1].draw(0, 0, width, height);
+			image.draw(0, 0, width, height);
 
 			shader.setUniform1f("TIME", TIME);
 			shader.setUniform1f("VOLUME", volume);
@@ -230,16 +248,16 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 		}
 
 		if(midiMessage.control == 116 && midiMessage.value == 127) {
-			activeVideo = 0;
+			activeLayer = 0;
 		}
 
 		if(midiMessage.control == 117 && midiMessage.value == 127) {
-			activeVideo = 1;
+			activeLayer = 1;
 		}
 
 		// PLAY VIDEOS
 		if(midiMessage.control >= 64 && midiMessage.control <= 71) {
-			changeToVideo = midiMessage.control - 64;
+			activePad = midiMessage.control - 64;
 			doLoadNewVideo = true;
 		}
 	}
@@ -254,19 +272,23 @@ float ofApp::smoothValue(float newValue, float value) {
 
 void ofApp::loadNewVideo() {
 	// TODO dont load already loaded
+
+	if(activeLayer == 0) {
+		selectedPad = activePad;
+		omxPlayers[0].loadMovie(videos[selectedPad]);
+		doLoadNewVideo = false;
+	} else if(activeLayer == 1) {
+		image.loadImage(images[selectedPad]);
+	}
+
 	/*
-	currentVideo = changeToVideo;
-	omxPlayers[activeVideo].loadMovie(videos[currentVideo]);
-	doLoadNewVideo = false;*/
-
-
-	if(changeToVideo == currentVideo) {
+	if(activePad == selectedPad) {
 		return;
 	}
 
-	currentVideo = changeToVideo;
-	omxPlayers[1].loadMovie(videos[currentVideo]);
-	doLoadNewVideo = false;
+	selectedPad = activePad;
+	omxPlayers[1].loadMovie(videos[selectedPad]);
+	doLoadNewVideo = false;*/
 }
 
 //--------------------------------------------------------------

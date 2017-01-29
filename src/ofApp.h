@@ -51,15 +51,18 @@ public:
     // PLAYER
 	  map<int, ofxOMXPlayer> omxPlayers;
     ofxOMXPlayerSettings settingsVideo;
+    ofImage image;
 
     int width;
     int height;
 
-    int activeVideo;
-    int currentVideo;
-    int changeToVideo;
+    int activeLayer;
+    int selectedPad;
+    int activePad;
     bool doLoadNewVideo;
+
     string videos[8];
+    string images[8];
 
     void loadNewVideo();
 		void onVideoEnd(ofxOMXPlayerListenerEventData& e);
