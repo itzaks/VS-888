@@ -51,15 +51,18 @@ public:
     // PLAYER
 	  map<int, ofxOMXPlayer> omxPlayers;
     ofxOMXPlayerSettings settingsVideo;
+
     ofImage image;
 
     int width;
     int height;
 
     int activeLayer;
-    int selectedPad;
+    int selectedPadImage;
+    int selectedPadVideo;
     int activePad;
     bool doLoadNewVideo;
+    bool loadedImage;
 
     string videos[8];
     string images[8];
@@ -72,9 +75,12 @@ public:
     void newMidiMessage(ofxMidiMessage& eventArgs);
 
     ofxMidiIn midiIn;
+    ofxMidiOut midiOut;
     ofxMidiMessage midiMessage;
 
     float controllers[24];
+
+    void setLED(int channel, int button, int color);
 
     // RECORDER
     ofxOMXRecorder recorder;

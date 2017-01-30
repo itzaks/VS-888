@@ -83,7 +83,7 @@ float centerVal(float around, float size, float x) {
 vec2 videoWave(in vec2 uv, in float per){
     uv.y += (TIME * 4.) / per;
     vec2 result = (cos(uv.y * per)) * normalize(vec2(1., cos((uv.y) * per)));
-    return result * distortion * 0.1;
+    return result * distortion * 0.035;
 }
 
 float noiseGenerate(vec2 p) {
@@ -182,7 +182,7 @@ void main() {
 
     // WAVE
     if(distortion > 0.) {
-      uvWAVE = videoWave(uv, 7. + 7. * distortion);
+      uvWAVE = videoWave(uv, 7. * distortion);
     }
 
   	// MIRROR EDGE
@@ -195,7 +195,13 @@ void main() {
     if(kaleido > 0.) {
       rotationOffset = -0.5;
     }
+
 		vec2 uvFG = rotate(uvZOOM, rotationOffset + rotation);
+
+		vec2 uvIMAGE = uvFG;
+    uvIMAGE.y += TIME * 0.2;
+    uvIMAGE = mod(uvIMAGE, 1.0);
+    uvIMAGE = 2.0 * abs(uvZOOM - center);
 
 		// KALEIDO
 		if(kaleido > 0.) {
@@ -205,19 +211,23 @@ void main() {
 
     // TEXTURES
     vec4 colorVIDEO = texture2D(VIDEO, uvFG + uvDIST + uvWAVE) * VIDEO_OPACITY;
-    vec4 colorIMAGE = texture2D(IMAGE, rotate(uvZOOM, 0.)) * IMAGE_OPACITY;
+    vec4 colorIMAGE = texture2D(IMAGE, uvFG + uvDIST + uvWAVE) * IMAGE_OPACITY;
+    vec4 colorIMAGE_QUAD = texture2D(IMAGE, uvIMAGE + uvDIST + uvWAVE) * IMAGE_OPACITY;
 		vec4 colorBG_COL = vec4(hsv2rgb(hsl), 1.0) ;
 
     // TUNNEL
     if(tunnelize > 0.) {
-      colorVIDEO = mix(colorVIDEO, tunnel(uvFG + uvDIST + uvWAVE), min(1., tunnelize * 2.));
+      colorVIDEO = mix(colorVIDEO, tunnel(uvFG + uvDIST + uvWAVE) * VIDEO_OPACITY, min(1., tunnelize * 2.));
     }
 
     // BLEND
-    vec4 color = blend(colorBG_COL, colorVIDEO);
-
+    vec4 color;
     // BLEND VID 1 AND VID 2
-    color = blend(color, colorIMAGE) + centerVal(0., 0.1 * noiseAmount, noise);
+
+    color = mix(colorIMAGE, colorIMAGE_QUAD * 0.5, tunnelize);
+    color = blend(color, colorVIDEO) + centerVal(0., 0.1 * noiseAmount, noise);
+    color = blend(colorBG_COL, color);
+
 
     // B&W
     if(colorizeHue > 0.8) {

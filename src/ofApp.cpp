@@ -15,7 +15,8 @@ void ofApp::setup(){
 	showMenu = false;
 
 	doLoadNewVideo = false;
-	selectedPad = 0;
+	selectedPadImage = 0;
+	selectedPadVideo = 0;
 	currentRecording = -1;
 
 	// AUDIO
@@ -54,6 +55,7 @@ void ofApp::setup(){
 	}
 
 	// SETUP IMAGES
+	loadedImage = false;
 	images[0] = ofToDataPath("images/image0.jpg", true);
 	images[1] = ofToDataPath("images/image1.jpg", true);
 	images[2] = ofToDataPath("images/image2.jpg", true);
@@ -63,17 +65,31 @@ void ofApp::setup(){
 	images[6] = ofToDataPath("images/image6.jpg", true);
 	images[7] = ofToDataPath("images/image7.jpg", true);
 
-	image.loadImage(images[0]);
-
 	// SHADER
   fbo.allocate(width, height);
   maskFbo.allocate(width, height);
 
 	//MIDI
 	midiIn.listPorts(); // via instance
-	midiIn.openPort(1);
+	midiIn.openPort("Launch Control 20:0"); // BY NAME TODO
 	midiIn.addListener(this);
-	midiIn.setVerbose(true);
+
+	midiOut.listPorts(); // via instance
+	midiOut.openPort("Launch Control 20:0"); // .openPort("IAC Driver Pure Data In"); BY NAME TODO
+
+	// LAYER COLORS
+	setLED(2, 116, 3); // SET TO RED
+	setLED(2, 117, 29); // SET TO YELLOW LIGHT
+
+	// CLEAR BUTTONS
+	setLED(2, 64, 31);
+	setLED(2, 65, 0);
+	setLED(2, 66, 0);
+	setLED(2, 67, 0);
+	setLED(2, 68, 0);
+	setLED(2, 69, 0);
+	setLED(2, 70, 0);
+	setLED(2, 71, 0);
 
 	//RECORING
 	doStartRecording = false;
@@ -151,15 +167,17 @@ void ofApp::draw(){
   	ofClear(0, 0, 0, 255);
 
     shader.begin();
-			shader.setUniformTexture("VID_1", omxPlayers[0].getTextureReference(), 1);
-	    shader.setUniformTexture("VID_2", omxPlayers[1].getTextureReference(), 2);
-	    shader.setUniformTexture("IMAGE", image, 2);
+			shader.setUniformTexture("VIDEO", omxPlayers[0].getTextureReference(), 1);
+	    shader.setUniformTexture("TEXTURE", omxPlayers[1].getTextureReference(), 2);
 
-	    shader.setUniformTexture("VID_BUFFER", fbo.getTextureReference(), 3);
+			if(loadedImage == true) {
+				shader.setUniformTexture("IMAGE", image, 3);
+			}
+
+	    shader.setUniformTexture("VID_BUFFER", fbo.getTextureReference(), 4);
 
 			omxPlayers[0].draw(0, 0, width, height);
 			omxPlayers[1].draw(0, 0, width, height);
-			image.draw(0, 0, width, height);
 
 			shader.setUniform1f("TIME", TIME);
 			shader.setUniform1f("VOLUME", volume);
@@ -190,6 +208,10 @@ void ofApp::draw(){
 		if(recorder.isRecording()) {
 			glReadPixels(0,0, fbo.getWidth(), fbo.getHeight(), colorFormat, GL_UNSIGNED_BYTE, pixels);
 		}
+
+	if(loadedImage) {
+		image.draw(0, 0, width, height);
+	}
 
   fbo.end();
   fbo.draw(0, 0, ofGetWidth(), ofGetHeight());
@@ -224,39 +246,50 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 	midiMessage = msg;
 
 	if(midiMessage.status == MIDI_CONTROL_CHANGE) {
+
+		// KNOBS
 		if(midiMessage.control >= 13 && midiMessage.control <= 28) {
 			controllers[midiMessage.control - 13] = midiMessage.value / 127.0f;
 		}
 
-		// RECORD
+		// MENU
 		if(midiMessage.control == 114){
 			showMenu = (midiMessage.value == 127);
+			setLED(2, 114, midiMessage.value); // SET TO RED
 		}
 
+		// RECORDING
 		if(midiMessage.control == 115 && midiMessage.value == 127){
 			if(doStartRecording || doStopRecording) {
 				return;
 			}
 
 	    if(recorder.isRecording() == false) {
+				setLED(2, 115, 3); // SET TO RED
 				doStartRecording = true;
 				ofLog() << "START REC";
 			} else {
+				setLED(2, 115, 0); // SET TO RED
 		    ofLog() << "STOP REC";
 			  doStopRecording = true;
 			}
 		}
 
+		// LAYER SELECTION
 		if(midiMessage.control == 116 && midiMessage.value == 127) {
+			setLED(2, 116, 3); // SET TO RED
+			setLED(2, 117, 29); // SET TO YELLOW LIGHT
 			activeLayer = 0;
 		}
 
 		if(midiMessage.control == 117 && midiMessage.value == 127) {
+			setLED(2, 117, 50); // SET TO YELLOW
+			setLED(2, 116, 9); // SET TO RED LIGHT
 			activeLayer = 1;
 		}
 
-		// PLAY VIDEOS
-		if(midiMessage.control >= 64 && midiMessage.control <= 71) {
+		// SAMPLE SELECTOR / PADS
+		if((midiMessage.control >= 64 && midiMessage.control <= 71) && midiMessage.value == 127) {
 			activePad = midiMessage.control - 64;
 			doLoadNewVideo = true;
 		}
@@ -271,24 +304,70 @@ float ofApp::smoothValue(float newValue, float value) {
 }
 
 void ofApp::loadNewVideo() {
-	// TODO dont load already loaded
+	// YELLOW LIGHT 29
+	// YELLOW 33
+	// YELLOW 50
+	// RED 3
+	// RED MID 6
+	// RED LIGHT 9
+	// GREEN LIGHT 16, 20
+	// GREEN MID 100
+	// GREEN 18
+	// ORANGE LIGHT 29
+	// ORANGE MID 30
+	// ORANGE 31
+
+	int color = 0;
 
 	if(activeLayer == 0) {
-		selectedPad = activePad;
-		omxPlayers[0].loadMovie(videos[selectedPad]);
-		doLoadNewVideo = false;
+		// SET NEW PAD
+		if(selectedPadImage == activePad) {
+			color = 31; // ORANGE IF SAME AS IMAGE
+		} else {
+			color = 3; // ELSE RED
+		}
+
+		setLED(2, 64 + activePad, color); // SET NEW COLOR
+
+		// UNSET OLD PAD
+		if(selectedPadImage == selectedPadVideo) {
+			color = 50; // HAS IMAGE, SET TO YELLOW
+		} else if(selectedPadVideo != activePad) {
+			color = 0;
+		}
+
+		setLED(2, 64 + selectedPadVideo, color); // SET TO BLANK
+
+		selectedPadVideo = activePad;
+		omxPlayers[0].loadMovie(videos[selectedPadVideo]);
+
 	} else if(activeLayer == 1) {
-		image.loadImage(images[selectedPad]);
-	}
+		// SET NEW PAD
+		if(selectedPadVideo == activePad) {
+			color = 31; // ORANGE IF SAME AS VIDEO
+		} else {
+			color = 50; // ELSE YELLOW
+		}
 
-	/*
-	if(activePad == selectedPad) {
-		return;
-	}
+		setLED(2, 64 + activePad, color); // SET NEW COLOR
 
-	selectedPad = activePad;
-	omxPlayers[1].loadMovie(videos[selectedPad]);
-	doLoadNewVideo = false;*/
+		// UNSET OLD PAD
+		if(selectedPadImage == selectedPadVideo) {
+			color = 3; // HAS IMAGE, SET TO RED
+		} else if(selectedPadImage != activePad) {
+			color = 0;
+		}
+
+		setLED(2, 64 + selectedPadImage, color); // SET TO BLANK
+		selectedPadImage = activePad;
+
+		image.loadImage(images[selectedPadImage]);
+
+		if(!loadedImage) {
+				loadedImage = true;
+		}
+	}
+	doLoadNewVideo = false;
 }
 
 //--------------------------------------------------------------
@@ -319,7 +398,12 @@ void ofApp::audioOut(ofSoundBuffer& buffer) {
   this->inputBuffer.copyTo(buffer);
 }
 
+void ofApp::setLED(int channel, int button, int color) {
+		midiOut.sendControlChange(channel, button, color);
+		midiOut.sendNoteOn(channel, button, color);
 
+		ofLogNotice() << "channel: " << channel << " note: " << button << " velocity: " << color;
+}
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
@@ -379,6 +463,8 @@ void ofApp::onVideoLoop(ofxOMXPlayerListenerEventData& e) {
 //--------------------------------------------------------------
 void ofApp::exit() {
 	// clean up
+	midiOut.closePort();
+
 	midiIn.closePort();
 	midiIn.removeListener(this);
 }
